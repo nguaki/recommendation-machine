@@ -1,0 +1,55 @@
+/**
+ * Utility to generate mock smart recommendations based on file names and types.
+ */
+export function generateSmartRecommendation(fileName: string, fileSize: number): string {
+  const nameLower = fileName.toLowerCase();
+  const sizeKB = (fileSize / 1024).toFixed(1);
+
+  if (nameLower.includes("resume") || nameLower.includes("cv") || nameLower.includes("profile")) {
+    return `📋 Resume Analysis Recommendation:
+- Consider adding more quantitative metrics (e.g., "improved performance by 25%") to make your achievements stand out.
+- The file size is ${sizeKB} KB, which is optimal for applicant tracking systems (ATS).
+- Ensure your contact information is updated and your professional links (GitHub, LinkedIn) are active.`;
+  }
+
+  if (nameLower.includes("portfolio") || nameLower.includes("design") || nameLower.includes("image") || nameLower.includes("logo")) {
+    return `🎨 Portfolio / Design Asset Recommendation:
+- Image assets can be optimized. We recommend converting this file into a web-optimized format (WebP or SVG) to save storage.
+- If this is a project case study, ensure you focus on the "problem-solving process" rather than just the final visuals.
+- Maintain high contrast for accessibility (WCAG AA standards).`;
+  }
+
+  if (nameLower.includes("report") || nameLower.includes("analysis") || nameLower.includes("chart")) {
+    return `📊 Analytical Report Recommendation:
+- Organize your findings with clear H2 headers and a bulleted Executive Summary at the top.
+- Consider visualizing these data points using an interactive dashboard (e.g., Recharts) to engage viewers.
+- Verify that your data sources are referenced and dated.`;
+  }
+
+  if (nameLower.includes("invoice") || nameLower.includes("receipt") || nameLower.includes("budget") || nameLower.includes("finance")) {
+    return `💰 Financial Asset Recommendation:
+- Keep a digital backup of this invoice in an encrypted storage bucket.
+- Categorize this transaction under tax-deductible expenses if applicable.
+- For budgets, consider running a bi-weekly variance check to ensure actual spend aligns with the forecast.`;
+  }
+
+  if (nameLower.endsWith(".pdf")) {
+    return `📕 Document Recommendation:
+- This PDF is compact (${sizeKB} KB) and easy to share.
+- Ensure that the text is searchable (OCR processed) rather than purely scanned image-based text.
+- Standard recommendations suggest adding metadata (Author, Subject) inside the PDF properties for better archival search.`;
+  }
+
+  if (nameLower.endsWith(".csv") || nameLower.endsWith(".xlsx") || nameLower.endsWith(".json")) {
+    return `🔢 Structured Data Recommendation:
+- This tabular data structure can be converted to an indexed database collection if query speed becomes an issue.
+- Ensure no personally identifiable information (PII) is stored in raw unencrypted formats.
+- Run a sanitization check to remove duplicate rows or empty records.`;
+  }
+
+  // Default fallback recommendations
+  return `✨ General File Recommendation:
+- File '${fileName}' (${sizeKB} KB) uploaded successfully.
+- Storage efficiency looks standard. Keep a consistent naming convention (e.g., yyyy-mm-dd-filename) for your files.
+- You can now tag, filter, or request custom AI recommendations for this document.`;
+}

@@ -1,0 +1,17 @@
+export interface UploadedFile {
+  id: string;
+  name: string;
+  size: number; // in bytes
+  date: string; // ISO date string
+  type: string; // MIME type or category
+  url?: string;
+  recommendation?: string;
+  status: 'pending' | 'analyzed' | 'failed';
+}
+
+export interface UserSession {
+  uid: string;
+  email: string;
+  isGuest: boolean;
+  displayName?: string;
+}
