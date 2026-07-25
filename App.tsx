@@ -1,4 +1,4 @@
-*import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { Upload, FileText, LayoutDashboard, GraduationCap, LogOut } from 'lucide-react';
 
 export default function App() {
