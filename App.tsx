@@ -1,66 +1,31 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, FileText, LayoutDashboard, GraduationCap, LogOut, Mail, Lock, Play, ArrowRight, Globe, ChevronLeft } from 'lucide-react';
-import { auth } from './firebaseConfig'; 
+import { Upload, FileText, LayoutDashboard, GraduationCap, LogOut, Mail, Lock, Play, ArrowRight, Globe, ChevronLeft, Send, Building2, Package, UserCheck } from 'lucide-react';
+import { auth, db } from './firebaseConfig'; 
 import { onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
-
-// --- TRANSLATIONS DICTIONARY ---
-const content: any = {
-  en: {
-    title: "How It Works",
-    subtitle: "Enterprise-grade recommendations for businesses of all sizes.",
-    description: "Most small businesses don't have enough data to build models like Netflix. We solve this by combining general market trends with your specific customer data.",
-    layerTop: "Business-Specific Matrix (Your Data)",
-    layerBottom: "General Co-purchase Matrix (Market Trends)",
-    result: "Final Model: Your Unique Recommendation Engine",
-    back: "Back to Home"
-  },
-  ko: {
-    title: "작동 원리",
-    subtitle: "모든 규모의 비즈니스를 위한 기업급 추천 시스템",
-    description: "대부분의 중소기업은 넷플릭스와 같은 모델을 만들기에 데이터가 부족합니다. 우리는 일반적인 시장 트렌드와 귀하의 특정 고객 데이터를 결합하여 이를 해결합니다.",
-    layerTop: "비즈니스별 매트릭스 (귀하의 데이터)",
-    layerBottom: "일반 공동 구매 매트릭스 (시장 트렌드)",
-    result: "최종 모델: 귀하만의 독특한 추천 엔진",
-    back: "홈으로 돌아가기"
-  },
-  ja: {
-    title: "仕組みについて",
-    subtitle: "あらゆる規模のビジネスに対応するエン터プライ즈級の推奨事項",
-    description: "ほとんどの中小企業は、Netflixのようなモデルを構築するのに十分なデータを持っていません。私たちは、一般的な市場動向とお客様の特定の顧客データを組み合わせることでこれを解決します。",
-    layerTop: "ビジネス固有のマトリックス (自社データ)",
-    layerBottom: "一般共同購入マトリックス (市場トレンド)",
-    result: "最終モデル：独自のレコメンデーションエンジン",
-    back: "ホームに戻る"
-  },
-  zh: {
-    title: "工作原理",
-    subtitle: "适用于各种规模企业的企业级推荐",
-    description: "大多数小企业没有足够的数据来构建像 Netflix 这样的模型。我们通过将一般市场趋势与您的特定客户数据相结合来解决这个问题。",
-    layerTop: "业务特定矩阵 (您的数据)",
-    layerBottom: "通用共同购买矩阵 (市场趋势)",
-    result: "最终模型：您独特的推荐引擎",
-    back: "回到首页"
-  },
-  es: {
-    title: "Cómo Funciona",
-    subtitle: "Recomendaciones de nivel empresarial para empresas de todos los tamaños.",
-    description: "La mayoría de las pequeñas empresas no tienen suficientes datos para crear modelos como Netflix. Resolvemos esto combinando las tendencias generales del mercado con sus datos de clientes específicos.",
-    layerTop: "Matriz específica del negocio (Sus datos)",
-    layerBottom: "Matriz general de co-compra (Tendencias del mercado)",
-    result: "Modelo final: Su motor de recomendación único",
-    back: "Volver al inicio"
-  }
-};
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 export default function App() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [view, setView] = useState<'home' | 'login' | 'dashboard' | 'tutorial'>('home');
-  const [lang, setLang] = useState<'en' | 'ko' | 'ja' | 'zh' | 'es'>('en');
-  const [isRegistering, setIsRegistering] = useState(false);
+  const [view, setView] = useState<'home' | 'login' | 'dashboard' | 'tutorial' | 'testForm'>('home');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [isRegistering, setIsRegistering] = useState(false);
+
+  // --- FORM STATE ---
+  const [formData, setFormData] = useState({
+    country: '',
+    industry: '',
+    skuCount: '',
+    hasFrontend: '',
+    userEmail: ''
+  });
+
+  const [items, setItems] = useState(
+    Array(10).fill(null).map(() => ({ name: '', brand: '', volume: '', description: '' }))
+  );
+
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -71,70 +36,203 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
-  const handleAuth = async (e: React.FormEvent) => {
+  // --- LOGIC: FORM VALIDATION ---
+  // Submit is active only if Email is present AND at least the first item has a name
+  const isFormValid = formData.userEmail.includes('@') && items[0].name.length > 2;
+
+  const handleItemChange = (index: number, field: string, value: string) => {
+    const newItems = [...items];
+    newItems[index] = { ...newItems[index], [field]: value };
+    setItems(newItems);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setSubmitting(true);
+
+    const payload = {
+      ...formData,
+      items: items.filter(i => i.name !== ''), // Only send items that have names
+      timestamp: new Date().toISOString()
+    };
+
     try {
-      if (isRegistering) {
-        await createUserWithEmailAndPassword(auth, email, password);
-      } else {
-        await signInWithEmailAndPassword(auth, email, password);
-      }
-    } catch (err: any) { setError(err.message); }
+      // 1. Save to Firestore (Durable Record)
+      await addDoc(collection(db, "leads"), {
+        ...payload,
+        createdAt: serverTimestamp()
+      });
+
+      // 2. Prepare Email Body (Parseable JSON-like format)
+      const emailBody = `
+--- NEW MODEL REQUEST ---
+ID: ${Math.random().toString(36).substr(2, 9)}
+COUNTRY: ${payload.country}
+INDUSTRY: ${payload.industry}
+SKU_COUNT: ${payload.skuCount}
+HAS_FRONTEND: ${payload.hasFrontend}
+RECIPIENT_EMAIL: ${payload.userEmail}
+
+ITEMS_START
+${payload.items.map((item, idx) => 
+  `ITEM_${idx+1}: [NAME: ${item.name} | BRAND: ${item.brand} | VOL: ${item.volume} | DESC: ${item.description}]`
+).join('\n')}
+ITEMS_END
+--- END REQUEST ---
+      `;
+
+      // For this prototype, we'll use a mailto link or alert. 
+      // In production, we'd trigger a Firebase Cloud Function to send the SMTP email.
+      window.location.href = `mailto:jamesche0409@gmail.com?subject=New Recommender Model Request&body=${encodeURIComponent(emailBody)}`;
+      
+      alert("Form submitted! Your email client will now open to send the parseable request to James.");
+      setView('home');
+    } catch (err) {
+      console.error(err);
+      alert("Submission failed. Check console.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (loading) return <div className="p-10 text-center font-sans">Initializing...</div>;
 
-  // --- VIEW: TUTORIAL (The 2-Layer Matrix Logic) ---
-  if (view === 'tutorial') {
-    const t = content[lang];
+  // --- VIEW: TEST FORM ---
+  if (view === 'testForm') {
     return (
-      <div className="min-h-screen bg-white font-sans flex flex-col">
-        <nav className="h-16 px-8 flex items-center justify-between border-b bg-gray-50">
+      <div className="min-h-screen bg-gray-50 font-sans pb-20">
+        <nav className="h-16 px-8 flex items-center justify-between border-b bg-white sticky top-0 z-50">
           <button onClick={() => setView('home')} className="flex items-center gap-2 text-gray-600 hover:text-black">
-            <ChevronLeft size={20} /> {t.back}
+            <ChevronLeft size={20} /> Back
           </button>
-          <div className="flex gap-2">
-            {['en', 'ko', 'ja', 'zh', 'es'].map((l) => (
-              <button 
-                key={l} 
-                onClick={() => setLang(l as any)}
-                className={`px-3 py-1 text-xs rounded border ${lang === l ? 'bg-[#001529] text-white' : 'bg-white text-gray-600'}`}
-              >
-                {l.toUpperCase()}
-              </button>
-            ))}
-          </div>
+          <span className="font-bold text-[#001529]">Step 2: Model Feasibility Test</span>
         </nav>
 
-        <div className="max-w-4xl mx-auto py-16 px-6 text-center">
-          <h1 className="text-4xl font-bold text-[#001529] mb-4">{t.title}</h1>
-          <p className="text-xl text-blue-600 font-medium mb-6">{t.subtitle}</p>
-          <p className="text-gray-600 leading-relaxed mb-12 text-lg">{t.description}</p>
-
-          {/* DIAGRAM SECTION */}
-          <div className="relative py-20 flex flex-col items-center">
-            {/* Top Matrix Layer */}
-            <div className="w-64 h-32 bg-blue-500/20 border-2 border-blue-600 rounded-lg transform -skew-x-12 flex items-center justify-center text-blue-800 font-bold shadow-xl relative z-20">
-              {t.layerTop}
-            </div>
+        <form onSubmit={handleSubmit} className="max-w-3xl mx-auto mt-12 px-6">
+          <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200 space-y-8">
             
-            {/* Connector */}
-            <div className="h-12 w-1 bg-gray-300 my-2"></div>
-
-            {/* Bottom Matrix Layer */}
-            <div className="w-64 h-32 bg-gray-100 border-2 border-gray-400 rounded-lg transform -skew-x-12 flex items-center justify-center text-gray-500 font-bold shadow-lg">
-              {t.layerBottom}
+            {/* 1. Country */}
+            <div>
+              <label className="flex items-center gap-2 text-sm font-bold text-gray-700 mb-2"><Globe size={16}/> 1. Select Country</label>
+              <select 
+                required className="w-full p-3 border rounded-lg bg-gray-50"
+                value={formData.country} onChange={e => setFormData({...formData, country: e.target.value})}
+              >
+                <option value="">Choose a country...</option>
+                <option value="USA">United States</option>
+                <option value="Korea">South Korea</option>
+                <option value="Japan">Japan</option>
+                <option value="China">China</option>
+                <option value="Spain">Spain</option>
+              </select>
             </div>
 
-            {/* Addition Sign */}
-            <div className="absolute right-1/4 top-1/2 transform translate-x-20 text-4xl font-light text-gray-400">+</div>
-
-            <div className="mt-16 p-6 border-t-4 border-[#001529] bg-gray-50 rounded-b-xl w-full">
-              <h3 className="text-2xl font-bold text-[#001529]">{t.result}</h3>
+            {/* 2. Industry */}
+            <div>
+              <label className="flex items-center gap-2 text-sm font-bold text-gray-700 mb-2"><Building2 size={16}/> 2. Industry Vertical</label>
+              <select 
+                required className="w-full p-3 border rounded-lg bg-gray-50"
+                value={formData.industry} onChange={e => setFormData({...formData, industry: e.target.value})}
+              >
+                <option value="">Select industry...</option>
+                <option value="Retail">Retail & E-commerce</option>
+                <option value="Manufacturing">Manufacturing</option>
+                <option value="Construction">Construction</option>
+                <option value="Real Estate">Real Estate</option>
+                <option value="Healthcare">Healthcare</option>
+                <option value="IT">Information Technology</option>
+                <option value="Others">Others</option>
+              </select>
             </div>
+
+            {/* 3. SKU Count */}
+            <div>
+              <label className="flex items-center gap-2 text-sm font-bold text-gray-700 mb-2"><Package size={16}/> 3. Approx. Number of Unique Items (SKUs)</label>
+              <input 
+                type="number" placeholder="e.g. 500" required className="w-full p-3 border rounded-lg bg-gray-50"
+                value={formData.skuCount} onChange={e => setFormData({...formData, skuCount: e.target.value})}
+              />
+            </div>
+
+            {/* 4. Frontend Dev */}
+            <div>
+              <label className="flex items-center gap-2 text-sm font-bold text-gray-700 mb-2"><UserCheck size={16}/> 4. Do you have a Front-end Engineer?</label>
+              <div className="flex gap-4">
+                {['Yes', 'No'].map(opt => (
+                  <label key={opt} className="flex items-center gap-2 cursor-pointer bg-gray-50 px-4 py-2 rounded-lg border">
+                    <input type="radio" name="frontend" value={opt} onChange={e => setFormData({...formData, hasFrontend: e.target.value})} /> {opt}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* 5. 10 Items */}
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-4">5. Enter up to 10 Real Items</label>
+              <div className="space-y-4">
+                {items.map((item, idx) => (
+                  <div key={idx} className="p-4 border rounded-xl bg-gray-50 grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <input 
+                      placeholder={`Item ${idx+1} Name*`}
+                      className="p-2 border rounded text-sm"
+                      value={item.name} onChange={e => handleItemChange(idx, 'name', e.target.value)}
+                    />
+                    <input 
+                      placeholder="Brand (Optional)"
+                      className="p-2 border rounded text-sm"
+                      value={item.brand} onChange={e => handleItemChange(idx, 'brand', e.target.value)}
+                    />
+                    <input 
+                      placeholder="Volume/Size (Optional)"
+                      className="p-2 border rounded text-sm"
+                      value={item.volume} onChange={e => handleItemChange(idx, 'volume', e.target.value)}
+                    />
+                    <input 
+                      placeholder="Description (Optional)"
+                      className="p-2 border rounded text-sm"
+                      value={item.description} onChange={e => handleItemChange(idx, 'description', e.target.value)}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* 6. Email */}
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-2">6. Email Address to Receive the Model</label>
+              <input 
+                type="email" placeholder="you@company.com" required className="w-full p-3 border rounded-lg bg-gray-50 border-blue-200"
+                value={formData.userEmail} onChange={e => setFormData({...formData, userEmail: e.target.value})}
+              />
+            </div>
+
+            {/* 7. Disclaimer */}
+            <div className="p-4 bg-blue-50 border border-blue-100 rounded-lg text-sm text-blue-800">
+              <strong>7. Notice:</strong> This preliminary model will be generated based on your order request and provided items. Our team will review the logical fit before processing.
+            </div>
+
+            {/* Submit Button */}
+            <button 
+              disabled={!isFormValid || submitting}
+              className={`w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition shadow-lg
+                ${isFormValid ? 'bg-[#001529] text-white hover:bg-blue-900' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}
+              `}
+            >
+              <Send size={20} /> {submitting ? 'Processing...' : 'Submit Request to James'}
+            </button>
           </div>
-        </div>
+        </form>
+      </div>
+    );
+  }
+
+  // --- VIEW: TUTORIAL ---
+  if (view === 'tutorial') {
+    return (
+      <div className="min-h-screen p-10 font-sans">
+        <button onClick={() => setView('home')} className="mb-4 flex items-center gap-2"><ChevronLeft/> Back</button>
+        <h1 className="text-3xl font-bold mb-4 text-[#001529]">How it Works</h1>
+        <p className="text-gray-600">Model creation logic explanation goes here...</p>
       </div>
     );
   }
@@ -162,7 +260,10 @@ export default function App() {
             >
               <Play size={20} className="text-blue-500" /> Step 1 - Tutorial
             </button>
-            <button className="flex items-center gap-3 px-8 py-4 bg-[#001529] text-white rounded-xl font-bold text-lg hover:bg-blue-900 shadow-lg">
+            <button 
+              onClick={() => setView('testForm')}
+              className="flex items-center gap-3 px-8 py-4 bg-[#001529] text-white rounded-xl font-bold text-lg hover:bg-blue-900 shadow-lg"
+            >
               Step 2 - Test with your items <ArrowRight size={20} />
             </button>
           </div>
@@ -171,43 +272,12 @@ export default function App() {
     );
   }
 
-  // --- VIEW: LOGIN --- (Existing Logic)
-  if (view === 'login' && !user) {
-    return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
-        <div className="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
-          <h2 className="text-2xl font-bold mb-6 text-center">{isRegistering ? 'Register' : 'Login'}</h2>
-          <form onSubmit={handleAuth} className="space-y-4">
-            <input type="email" placeholder="Email" required className="w-full p-3 border rounded" value={email} onChange={e => setEmail(e.target.value)} />
-            <input type="password" placeholder="Password" required className="w-full p-3 border rounded" value={password} onChange={e => setPassword(e.target.value)} />
-            <button className="w-full py-3 bg-[#001529] text-white rounded font-bold">{isRegistering ? 'Sign Up' : 'Sign In'}</button>
-          </form>
-          <button onClick={() => setIsRegistering(!isRegistering)} className="mt-4 text-blue-600 text-sm w-full text-center">
-            {isRegistering ? 'Have an account? Login' : 'Need an account? Register'}
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // --- VIEW: DASHBOARD --- (Existing Logic)
+  // --- OTHER VIEWS (LOGIN/DASHBOARD) ---
+  // ... (Keep your existing Login/Dashboard code here)
   return (
-    <div className="flex h-screen bg-[#f8f9fa] font-sans">
-      <aside className="w-64 bg-[#001529] text-white flex flex-col">
-        <div className="p-6 text-lg font-bold border-b border-gray-700">Recommendation Machine</div>
-        <nav className="flex-1 mt-6">
-          <div className="px-4 py-3 bg-blue-600 flex items-center gap-3"><LayoutDashboard size={20} /> Dashboard</div>
-          <div onClick={() => setView('tutorial')} className="px-4 py-3 hover:bg-gray-800 flex items-center gap-3 cursor-pointer"><GraduationCap size={20} /> Tutorial</div>
-        </nav>
-        <div onClick={() => signOut(auth)} className="p-6 border-t border-gray-700 flex items-center gap-3 cursor-pointer"><LogOut size={20} /> Sign Out</div>
-      </aside>
-      <main className="flex-1 p-8 overflow-y-auto">
-        <h2 className="text-2xl font-bold mb-6 text-gray-800">Welcome, {user?.email}</h2>
-        <div className="bg-white p-12 border-2 border-dashed border-gray-300 rounded-xl text-center">
-          <Upload className="mx-auto text-blue-600 mb-4" size={40} />
-          <h3 className="text-lg font-medium">Ready to upload data?</h3>
-        </div>
-      </main>
+    <div className="p-10 font-sans">
+      <h1 className="text-2xl font-bold">Logged In Dashboard</h1>
+      <button onClick={() => signOut(auth)} className="mt-4 bg-red-500 text-white p-2 px-4 rounded">Log Out</button>
     </div>
   );
 }
