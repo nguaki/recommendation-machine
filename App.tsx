@@ -63,13 +63,13 @@ export default function App() {
     // 2. Build the Payload for both Firestore and EmailJS
     // These keys must match the {{variable_names}} in your EmailJS template
     const payload = {
-      country: formData.country,
-      industry: formData.industry,
-      skuCount: formData.skuCount,
-      hasFrontend: formData.hasFrontend,
-      userEmail: formData.userEmail,
-      items_summary: itemsSummary,
-      submission_id: Math.random().toString(36).substring(2, 10).toUpperCase()
+      country: String(formData.country),
+      industry: String(formData.industry),
+      skuCount: String(formData.skuCount),
+      hasFrontend: String(formData.hasFrontend),
+      userEmail: String(formData.userEmail),
+      items_summary: String(itemsSummary),
+      submission_id: String(Math.random().toString(36).substring(2, 10).toUpperCase())
     };
 
     try {
