@@ -5,6 +5,8 @@ import { onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWith
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import emailjs from '@emailjs/browser';
 
+emailjs.init("FfJyzOtIfjHoD6Dfm"); 
+
 export default function App() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -83,8 +85,7 @@ export default function App() {
       await emailjs.send(
         'service_qklzfci',   // e.g., 'service_abc123'
         'template_st05npk',  // e.g., 'template_xyz456'
-        payload,             // This object fills the {{variables}} in your template
-        'FfJyzOtIfjHoD6Dfm'    // e.g., 'FfJyzOtIfjHoD6Dfm'
+        payload             // This object fills the {{variables}} in your template
       );
 
       // 5. SUCCESS: Inform the user and reset the view
