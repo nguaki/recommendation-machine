@@ -3,6 +3,7 @@ import { Upload, FileText, LayoutDashboard, GraduationCap, LogOut, Mail, Lock, P
 import { auth, db } from './firebaseConfig'; 
 import { onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import emailjs from '@emailjs/browser';
 
 export default function App() {
   const [user, setUser] = useState<any>(null);
@@ -47,54 +48,59 @@ export default function App() {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitting(true);
+    e.preventDefault(); // Prevents the browser from reloading the page
+    setSubmitting(true); // Disables the button to prevent double-clicks
 
+    // 1. Prepare the Items Data into a clean, parseable text block
+    // We filter out any items that don't have a name
+    const validItems = items.filter(i => i.name.trim() !== '');
+    const itemsSummary = validItems.map((item, index) => {
+      return `ITEM_${index + 1}: [Name: ${item.name} | Brand: ${item.brand || 'N/A'} | Vol: ${item.volume || 'N/A'} | Desc: ${item.description || 'N/A'}]`;
+    }).join('\n');
+
+    // 2. Build the Payload for both Firestore and EmailJS
+    // These keys must match the {{variable_names}} in your EmailJS template
     const payload = {
-      ...formData,
-      items: items.filter(i => i.name !== ''), // Only send items that have names
-      timestamp: new Date().toISOString()
+      country: formData.country,
+      industry: formData.industry,
+      skuCount: formData.skuCount,
+      hasFrontend: formData.hasFrontend,
+      userEmail: formData.userEmail,
+      items_summary: itemsSummary,
+      submission_id: Math.random().toString(36).substring(2, 10).toUpperCase()
     };
 
     try {
-      // 1. Save to Firestore (Durable Record)
+      // 3. LOGIC A: Save to Firestore Database (Permanent Record)
       await addDoc(collection(db, "leads"), {
         ...payload,
         createdAt: serverTimestamp()
       });
+      console.log("Database record created successfully");
 
-      // 2. Prepare Email Body (Parseable JSON-like format)
-      const emailBody = `
---- NEW MODEL REQUEST ---
-ID: ${Math.random().toString(36).substr(2, 9)}
-COUNTRY: ${payload.country}
-INDUSTRY: ${payload.industry}
-SKU_COUNT: ${payload.skuCount}
-HAS_FRONTEND: ${payload.hasFrontend}
-RECIPIENT_EMAIL: ${payload.userEmail}
+      // 4. LOGIC B: Send Email Notification via EmailJS
+      // Replace the strings below with your actual IDs from the EmailJS dashboard
+      await emailjs.send(
+        'service_qklzfci',   // e.g., 'service_abc123'
+        'template_st05npk',  // e.g., 'template_xyz456'
+        payload,             // This object fills the {{variables}} in your template
+        'FfJyzOtIfjHoD6Dfm'    // e.g., 'FfJyzOtIfjHoD6Dfm'
+      );
 
-ITEMS_START
-${payload.items.map((item, idx) => 
-  `ITEM_${idx+1}: [NAME: ${item.name} | BRAND: ${item.brand} | VOL: ${item.volume} | DESC: ${item.description}]`
-).join('\n')}
-ITEMS_END
---- END REQUEST ---
-      `;
+      // 5. SUCCESS: Inform the user and reset the view
+      alert("Success! Your request has been sent to James. The model will be created based on your order.");
+      setView('home'); // Send them back to the landing page
 
-      // For this prototype, we'll use a mailto link or alert. 
-      // In production, we'd trigger a Firebase Cloud Function to send the SMTP email.
-      window.location.href = `mailto:jamesche0409@gmail.com?subject=New Recommender Model Request&body=${encodeURIComponent(emailBody)}`;
-      
-      alert("Form submitted! Your email client will now open to send the parseable request to James.");
-      setView('home');
-    } catch (err) {
-      console.error(err);
-      alert("Submission failed. Check console.");
+    } catch (err: any) {
+      // 6. ERROR HANDLING
+      console.error("Submission Error:", err);
+      alert("An error occurred. Your data was saved, but the email notification failed. James will still see your request in the database.");
     } finally {
-      setSubmitting(false);
+      setSubmitting(false); // Re-enable buttons if they want to try again
     }
   };
 
+  
   if (loading) return <div className="p-10 text-center font-sans">Initializing...</div>;
 
   // --- VIEW: TEST FORM ---
