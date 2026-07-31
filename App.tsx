@@ -80,8 +80,8 @@ export default function App() {
       // 2. Send via EmailJS
       // Note: We initialized with your Public Key at the top of the file already
       await emailjs.send(
-        'YOUR_SERVICE_ID', 
-        'YOUR_TEMPLATE_ID', 
+        'service_qklzfci', 
+        'template_st05npk', 
         templateParams
       );
 
