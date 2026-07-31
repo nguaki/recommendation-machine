@@ -49,55 +49,50 @@ export default function App() {
     setItems(newItems);
   };
 
+  // Inside App.tsx -> handleSubmit
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault(); // Prevents the browser from reloading the page
-    setSubmitting(true); // Disables the button to prevent double-clicks
+    e.preventDefault();
+    setSubmitting(true);
 
-    // 1. Prepare the Items Data into a clean, parseable text block
-    // We filter out any items that don't have a name
     const validItems = items.filter(i => i.name.trim() !== '');
     const itemsSummary = validItems.map((item, index) => {
-      return `ITEM_${index + 1}: [Name: ${item.name} | Brand: ${item.brand || 'N/A'} | Vol: ${item.volume || 'N/A'} | Desc: ${item.description || 'N/A'}]`;
+      return `ITEM_${index + 1}: [Name: ${item.name} | Brand: ${item.brand || 'N/A'}]`;
     }).join('\n');
 
-    // 2. Build the Payload for both Firestore and EmailJS
-    // These keys must match the {{variable_names}} in your EmailJS template
-    const payload = {
-      country: String(formData.country),
-      industry: String(formData.industry),
-      skuCount: String(formData.skuCount),
-      hasFrontend: String(formData.hasFrontend),
-      userEmail: String(formData.userEmail),
-      items_summary: String(itemsSummary),
-      submission_id: String(Math.random().toString(36).substring(2, 10).toUpperCase())
+    // Ensure these keys match the {{variables}} in your EmailJS Template Body
+    const templateParams = {
+      country: formData.country,
+      industry: formData.industry,
+      skuCount: formData.skuCount,
+      hasFrontend: formData.hasFrontend,
+      userEmail: formData.userEmail,
+      items_summary: itemsSummary,
+      submission_id: Math.random().toString(36).substring(2, 10).toUpperCase()
     };
 
     try {
-      // 3. LOGIC A: Save to Firestore Database (Permanent Record)
+      // 1. Save to Firestore (The durable backup)
       await addDoc(collection(db, "leads"), {
-        ...payload,
+        ...templateParams,
         createdAt: serverTimestamp()
       });
-      console.log("Database record created successfully");
 
-      // 4. LOGIC B: Send Email Notification via EmailJS
-      // Replace the strings below with your actual IDs from the EmailJS dashboard
+      // 2. Send via EmailJS
+      // Note: We initialized with your Public Key at the top of the file already
       await emailjs.send(
-        'service_qklzfci',   // e.g., 'service_abc123'
-        'template_st05npk',  // e.g., 'template_xyz456'
-        payload             // This object fills the {{variables}} in your template
+        'YOUR_SERVICE_ID', 
+        'YOUR_TEMPLATE_ID', 
+        templateParams
       );
 
-      // 5. SUCCESS: Inform the user and reset the view
-      alert("Success! Your request has been sent to James. The model will be created based on your order.");
-      setView('home'); // Send them back to the landing page
-
+      alert("Success! The request has been sent to James.");
+      setView('home');
     } catch (err: any) {
-      // 6. ERROR HANDLING
-      console.error("Submission Error:", err);
-      alert("An error occurred. Your data was saved, but the email notification failed. James will still see your request in the database.");
+      // This will now catch the "Recipients address is empty" error if the Dashboard isn't fixed
+      console.log("EmailJS Error Object:", err); 
+      alert(`Error: ${err.text || 'Notification failed'}`);
     } finally {
-      setSubmitting(false); // Re-enable buttons if they want to try again
+      setSubmitting(false);
     }
   };
 
