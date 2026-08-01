@@ -227,7 +227,6 @@ export default function App() {
                 <div className={`p-6 bg-white border-2 rounded-xl transition ${hasAgreed ? 'border-green-100' : 'opacity-40'}`}>
                   <h4 className="font-bold mb-4">Monthly Plan</h4>
                   <div className="text-3xl font-black mb-6">$99/mo</div>
-                  <button disabled={!hasAgreed} className="w-full py-3 bg-green-600 text-white rounded-lg font-bold">Subscribe</button>
                   <button 
                           disabled={!hasAgreed}
                           onClick={() => {
