@@ -213,12 +213,31 @@ export default function App() {
                 <div className={`p-6 bg-white border-2 rounded-xl transition ${hasAgreed ? 'border-blue-100' : 'opacity-40'}`}>
                   <h4 className="font-bold mb-4">Initialization Fee</h4>
                   <div className="text-3xl font-black mb-6">$499</div>
-                  <button disabled={!hasAgreed} className="w-full py-3 bg-[#001529] text-white rounded-lg font-bold">Pay Now</button>
+                  <button 
+                        disabled={!hasAgreed}
+                        onClick={() => {
+                        // Redirect the user to Stripe
+                          window.location.href = "https://buy.stripe.com/00weVc59bczO1rM0ilfAc00";
+                        }}
+                        className="w-full py-3 bg-[#001529] text-white rounded-lg font-bold"
+                  >
+                  Pay Now
+                  </button>
                 </div>
                 <div className={`p-6 bg-white border-2 rounded-xl transition ${hasAgreed ? 'border-green-100' : 'opacity-40'}`}>
                   <h4 className="font-bold mb-4">Monthly Plan</h4>
                   <div className="text-3xl font-black mb-6">$99/mo</div>
                   <button disabled={!hasAgreed} className="w-full py-3 bg-green-600 text-white rounded-lg font-bold">Subscribe</button>
+                  <button 
+                          disabled={!hasAgreed}
+                          onClick={() => {
+                            // Redirect the user to Stripe
+                            window.location.href = "https://buy.stripe.com/7sYcN4atv7fu9Yie9bfAc01";
+                          }}
+                          className="w-full py-3 bg-green-600 text-white rounded-lg font-bold"
+                  >
+                  Subscribe
+                  </button>
                 </div>
               </div>
             </div>
