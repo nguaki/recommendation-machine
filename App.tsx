@@ -12,20 +12,7 @@ import emailjs from '@emailjs/browser';
 // Initialize EmailJS
 emailjs.init("YOUR_PUBLIC_KEY"); 
 
-const getInitializationPrice = (n: number) => {
-  if (n <= 0) return 0;
-  if (n <= 100) return 58.93;
-  if (n <= 200) return 85.95;
-  if (n <= 300) return 131.00;
-  if (n <= 400) return 194.11;
-  if (n <= 500) return 275.28;
-  if (n <= 600) return 374.55;
-  if (n <= 700) return 491.84;
-  if (n <= 800) return 627.19;
-  if (n <= 900) return 780.63;
-  if (n <= 1000) return 952.10;
-  return null; // Signals "Contact for Assessment"
-};
+
 
 // --- TUTORIAL CONTENT DICTIONARY ---
 const tutorialContent: any = {
@@ -44,6 +31,7 @@ export default function App() {
   const [lang, setLang] = useState<'en' | 'ko' | 'ja' | 'zh' | 'es'>('en');
 
   const [skuCount, setSkuCount] = useState(0); 
+  const [needsStratification, setNeedsStratification] = useState(false);
 
   // --- AUTH STATE ---
   const [email, setEmail] = useState('');
@@ -59,6 +47,25 @@ export default function App() {
   const [items, setItems] = useState(Array(10).fill(null).map(() => ({ name: '', brand: '', volume: '', description: '' })));
   const [submitting, setSubmitting] = useState(false);
 
+const getInitializationPrice = (n: number) => {
+  if (n <= 0) return 0;
+  if (n <= 100) return 58.93;
+  if (n <= 200) return 85.95;
+  if (n <= 300) return 131.00;
+  if (n <= 400) return 194.11;
+  if (n <= 500) return 275.28;
+  if (n <= 600) return 374.55;
+  if (n <= 700) return 491.84;
+  if (n <= 800) return 627.19;
+  if (n <= 900) return 780.63;
+  if (n <= 1000) return 952.10;
+  return null; // Signals "Contact for Assessment"
+};
+
+  const initPrice = getInitializationPrice(skuCount);
+  const stratificationPrice = skuCount > 300 && needsStratification ? 149.00 : 0;
+  const finalTotal = initPrice + stratificationPrice;
+  
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
@@ -287,6 +294,79 @@ export default function App() {
       </div>
     </div>
 
+
+    {/* NEW: STRATIFICATION OPTION */}
+    <div className={`p-6 rounded-2xl border-2 transition-all ${needsStratification ? 'bg-blue-50 border-blue-200' : 'bg-white border-gray-100'}`}>
+      <div className="flex items-start gap-4">
+        <input 
+          type="checkbox" 
+          className="w-6 h-6 mt-1 accent-[#001529]" 
+          checked={needsStratification}
+          onChange={(e) => setNeedsStratification(e.target.checked)}
+        />
+        <div>
+          <h4 className="font-bold text-[#001529]">Add Data Stratification & Hygiene Audit</h4>
+          <p className="text-sm text-gray-600">
+            I need James to assist in creating 2-level categories to prune the co-purchase matrix and improve recommendation diversity.
+          </p>
+          {skuCount > 300 && (
+            <span className="text-blue-600 font-bold text-sm">+$149.00 Audit Fee</span>
+          )}
+        </div>
+      </div>
+    </div>
+
+ {/* UPDATED: PAYMENT ACTIONS */}
+    <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200">
+      <div className="mb-8">
+        <h3 className="font-bold mb-2">Final Quote</h3>
+        <div className="flex justify-between items-end">
+          <div className="text-sm text-gray-500">
+            Initialization: ${initPrice} <br/>
+            {stratificationPrice > 0 && <>Data Audit: ${stratificationPrice} <br/></>}
+            <span className="text-xl font-bold text-[#001529]">Total: ${finalTotal.toFixed(2)}</span>
+          </div>
+          
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input type="checkbox" className="w-5 h-5 accent-[#001529]" checked={hasAgreed} onChange={e => setHasAgreed(e.target.checked)} />
+            <span className="text-sm font-semibold">I accept this custom quote.</span>
+          </label>
+        </div>
+      </div>
+
+      <div className="flex flex-col md:flex-row gap-6">
+        <button 
+          disabled={!hasAgreed || skuCount > 1000 || skuCount === 0}
+          onClick={() => alert(`Requesting Invoice for $${finalTotal.toFixed(2)}`)}
+          className="flex-1 py-4 bg-[#001529] text-white rounded-xl font-bold disabled:bg-gray-200"
+        >
+          {skuCount > 1000 ? "Request Personal Assessment" : "Request Setup Invoice"}
+        </button>
+        
+        {/* Monthly Plan remains the same */}
+         <div className="flex-1 p-4 bg-green-50 border-2 border-green-100 rounded-xl flex items-center justify-between">
+          <div>
+            <div className="text-xs font-bold text-green-700 uppercase">Monthly Maintenance</div>
+            <div className="text-2xl font-black text-[#001529]">$99<span className="text-sm font-normal">/mo</span></div>
+          </div>
+          <button 
+            disabled={!hasAgreed}
+            className="px-6 py-3 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 disabled:bg-gray-200 transition"
+          >
+            Subscribe
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+
+    
+
+
+
+    
     {/* Payment & Agreement Actions */}
     <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200">
       <div className="mb-8">
