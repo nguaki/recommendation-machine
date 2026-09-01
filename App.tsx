@@ -359,53 +359,6 @@ const getInitializationPrice = (n: number) => {
       </div>
     </div>
   </div>
-
-
-
-    
-
-
-
-    
-    {/* Payment & Agreement Actions */}
-    <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200">
-      <div className="mb-8">
-        <h3 className="font-bold mb-4">2. Service Agreement</h3>
-        <div className="h-24 overflow-y-auto text-xs text-gray-500 bg-gray-50 p-4 rounded mb-4 border">
-          I accept that the initialization fee covers the semantic processing of the calculated 
-          co-purchase combinations. If my SKU count exceeds 1,000, I will await a personal 
-          assessment from James before making a payment. [Full terms apply]
-        </div>
-        <label className="flex items-center gap-3 cursor-pointer">
-          <input type="checkbox" className="w-5 h-5 accent-[#001529]" checked={hasAgreed} onChange={e => setHasAgreed(e.target.checked)} />
-          <span className="text-sm font-semibold text-gray-700">I accept the custom quote and terms of service.</span>
-        </label>
-      </div>
-
-      <div className="flex flex-col md:flex-row gap-6">
-        <button 
-          disabled={!hasAgreed || skuCount > 1000 || skuCount === 0}
-          onClick={() => alert(`Requesting Invoice for $${getInitializationPrice(skuCount)}`)}
-          className="flex-1 py-4 bg-[#001529] text-white rounded-xl font-bold flex items-center justify-center gap-2 disabled:bg-gray-200 disabled:text-gray-400 shadow-lg hover:bg-blue-900 transition"
-        >
-          {skuCount > 1000 ? "Request Personal Assessment" : "Request Setup Invoice"}
-        </button>
-        
-        <div className="flex-1 p-4 bg-green-50 border-2 border-green-100 rounded-xl flex items-center justify-between">
-          <div>
-            <div className="text-xs font-bold text-green-700 uppercase">Monthly Maintenance</div>
-            <div className="text-2xl font-black text-[#001529]">$99<span className="text-sm font-normal">/mo</span></div>
-          </div>
-          <button 
-            disabled={!hasAgreed}
-            className="px-6 py-3 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 disabled:bg-gray-200 transition"
-          >
-            Subscribe
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
 )}                  
           {view === 'dashboard' && (
             <div className="max-w-4xl mx-auto">
