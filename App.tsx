@@ -12,6 +12,21 @@ import emailjs from '@emailjs/browser';
 // Initialize EmailJS
 emailjs.init("YOUR_PUBLIC_KEY"); 
 
+const getInitializationPrice = (n: number) => {
+  if (n <= 0) return 0;
+  if (n <= 100) return 58.93;
+  if (n <= 200) return 85.95;
+  if (n <= 300) return 131.00;
+  if (n <= 400) return 194.11;
+  if (n <= 500) return 275.28;
+  if (n <= 600) return 374.55;
+  if (n <= 700) return 491.84;
+  if (n <= 800) return 627.19;
+  if (n <= 900) return 780.63;
+  if (n <= 1000) return 952.10;
+  return null; // Signals "Contact for Assessment"
+};
+
 // --- TUTORIAL CONTENT DICTIONARY ---
 const tutorialContent: any = {
   en: { title: "How It Works", subtitle: "Enterprise-grade recommendations.", description: "We combine general market trends with your specific data.", layerTop: "Business-Specific Matrix", layerBottom: "General Co-purchase Matrix", result: "Final Unique Model", back: "Back to Home" },
@@ -201,46 +216,115 @@ export default function App() {
           <h2 className="text-xl font-semibold text-gray-800 capitalize">{view}</h2>
           <span className="text-sm bg-blue-50 text-blue-700 px-3 py-1 rounded-full font-medium">{user?.email}</span>
         </header>
-        <div className="p-8 overflow-y-auto">
+        <div className="p-8 overflow-y-auto">          
           {view === 'billing' && (
-            <div className="max-w-4xl mx-auto space-y-8">
-              <div className="bg-white p-8 rounded-2xl shadow-sm border">
-                <h3 className="font-bold mb-4">Service Agreement</h3>
-                <div className="h-32 overflow-y-auto text-xs text-gray-500 bg-gray-50 p-4 rounded mb-4">By proceeding, you agree to the matrix initialization fee and recurring monthly data processing subscription. Your data remains isolated in your GCP bucket.</div>
-                <label className="flex items-center gap-3 cursor-pointer"><input type="checkbox" className="w-5 h-5" checked={hasAgreed} onChange={e => setHasAgreed(e.target.checked)} /><span className="text-sm font-semibold">I accept the terms.</span></label>
-              </div>
-              <div className="grid grid-cols-2 gap-8">
-                <div className={`p-6 bg-white border-2 rounded-xl transition ${hasAgreed ? 'border-blue-100' : 'opacity-40'}`}>
-                  <h4 className="font-bold mb-4">Initialization Fee</h4>
-                  <div className="text-3xl font-black mb-6">$499</div>
-                  <button 
-                        disabled={!hasAgreed}
-                        onClick={() => {
-                        // Redirect the user to Stripe
-                          window.location.href = "https://buy.stripe.com/00weVc59bczO1rM0ilfAc00";
-                        }}
-                        className="w-full py-3 bg-[#001529] text-white rounded-lg font-bold"
-                  >
-                  Pay Now
-                  </button>
-                </div>
-                <div className={`p-6 bg-white border-2 rounded-xl transition ${hasAgreed ? 'border-green-100' : 'opacity-40'}`}>
-                  <h4 className="font-bold mb-4">Monthly Plan</h4>
-                  <div className="text-3xl font-black mb-6">$99/mo</div>
-                  <button 
-                          disabled={!hasAgreed}
-                          onClick={() => {
-                            // Redirect the user to Stripe
-                            window.location.href = "https://buy.stripe.com/7sYcN4atv7fu9Yie9bfAc01";
-                          }}
-                          className="w-full py-3 bg-green-600 text-white rounded-lg font-bold"
-                  >
-                  Subscribe
-                  </button>
-                </div>
-              </div>
+  <div className="max-w-5xl mx-auto space-y-8 pb-20">
+    <div className="bg-white rounded-2xl shadow-sm border p-8">
+      <h3 className="text-2xl font-bold text-[#001529] mb-6">1. Initialization Price Calculator</h3>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+        {/* Left: The Calculator */}
+        <div className="space-y-6">
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-2">Enter Total Distinct SKUs (N)</label>
+            <input 
+              type="number" 
+              className="w-full p-4 border-2 border-blue-100 rounded-xl bg-gray-50 text-xl font-bold focus:border-blue-500 outline-none"
+              placeholder="e.g. 500"
+              value={skuCount || ''}
+              onChange={(e) => setSkuCount(Number(e.target.value))}
+            />
+          </div>
+
+          <div className="p-6 bg-[#001529] text-white rounded-xl shadow-inner">
+            <div className="flex justify-between items-center mb-4 border-b border-blue-900 pb-4">
+              <span className="text-blue-300">Total Combinations C(N,2):</span>
+              <span className="text-2xl font-mono">
+                {skuCount > 1 ? (skuCount * (skuCount - 1) / 2).toLocaleString() : 0}
+              </span>
             </div>
-          )}
+            <div className="flex justify-between items-center">
+              <span className="text-blue-300 font-bold">Initialization Price:</span>
+              <span className="text-3xl font-black">
+                {skuCount > 1000 ? (
+                  <span className="text-lg text-yellow-400">Personal Assessment Required</span>
+                ) : (
+                  `$${getInitializationPrice(skuCount)}`
+                )}
+              </span>
+            </div>
+          </div>
+          
+          <div className="text-xs text-gray-400 italic">
+            * C(N,2) represents the number of unique pair combinations calculated to build your co-purchase matrix.
+          </div>
+        </div>
+
+        {/* Right: Reference Table */}
+        <div className="bg-gray-50 rounded-xl p-4 border overflow-hidden">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-gray-500 border-b">
+                <th className="pb-2 font-bold uppercase tracking-wider">Total Items</th>
+                <th className="pb-2 font-bold uppercase tracking-wider text-right">Init. Price</th>
+              </tr>
+            </thead>
+            <tbody className="text-gray-700 divide-y">
+              {[100, 200, 300, 400, 500, 600, 700, 800, 900, 1000].map((val) => (
+                <tr key={val} className={skuCount > val - 100 && skuCount <= val ? "bg-blue-100 font-bold" : ""}>
+                  <td className="py-2">{val.toLocaleString()}</td>
+                  <td className="py-2 text-right">${getInitializationPrice(val)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div className="mt-4 p-2 bg-yellow-50 text-yellow-800 text-[10px] rounded text-center border border-yellow-200 uppercase font-bold">
+            Above 1,000 items: 1:1 Personal Assessment
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {/* Payment & Agreement Actions */}
+    <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200">
+      <div className="mb-8">
+        <h3 className="font-bold mb-4">2. Service Agreement</h3>
+        <div className="h-24 overflow-y-auto text-xs text-gray-500 bg-gray-50 p-4 rounded mb-4 border">
+          I accept that the initialization fee covers the semantic processing of the calculated 
+          co-purchase combinations. If my SKU count exceeds 1,000, I will await a personal 
+          assessment from James before making a payment. [Full terms apply]
+        </div>
+        <label className="flex items-center gap-3 cursor-pointer">
+          <input type="checkbox" className="w-5 h-5 accent-[#001529]" checked={hasAgreed} onChange={e => setHasAgreed(e.target.checked)} />
+          <span className="text-sm font-semibold text-gray-700">I accept the custom quote and terms of service.</span>
+        </label>
+      </div>
+
+      <div className="flex flex-col md:flex-row gap-6">
+        <button 
+          disabled={!hasAgreed || skuCount > 1000 || skuCount === 0}
+          onClick={() => alert(`Requesting Invoice for $${getInitializationPrice(skuCount)}`)}
+          className="flex-1 py-4 bg-[#001529] text-white rounded-xl font-bold flex items-center justify-center gap-2 disabled:bg-gray-200 disabled:text-gray-400 shadow-lg hover:bg-blue-900 transition"
+        >
+          {skuCount > 1000 ? "Request Personal Assessment" : "Request Setup Invoice"}
+        </button>
+        
+        <div className="flex-1 p-4 bg-green-50 border-2 border-green-100 rounded-xl flex items-center justify-between">
+          <div>
+            <div className="text-xs font-bold text-green-700 uppercase">Monthly Maintenance</div>
+            <div className="text-2xl font-black text-[#001529]">$99<span className="text-sm font-normal">/mo</span></div>
+          </div>
+          <button 
+            disabled={!hasAgreed}
+            className="px-6 py-3 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 disabled:bg-gray-200 transition"
+          >
+            Subscribe
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+)}                  
           {view === 'dashboard' && (
             <div className="max-w-4xl mx-auto">
               <div className="bg-white border-2 border-dashed border-gray-300 rounded-xl p-12 text-center mb-8">
