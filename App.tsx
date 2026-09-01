@@ -42,7 +42,9 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<'home' | 'login' | 'dashboard' | 'tutorial' | 'testForm' | 'billing'>('home');
   const [lang, setLang] = useState<'en' | 'ko' | 'ja' | 'zh' | 'es'>('en');
-  
+
+  const [skuCount, setSkuCount] = useState(0); 
+
   // --- AUTH STATE ---
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
