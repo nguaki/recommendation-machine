@@ -59,6 +59,12 @@ const getInitializationPrice = (n: number) => {
   if (n <= 800) return 627.19;
   if (n <= 900) return 780.63;
   if (n <= 1000) return 952.10;
+ // New Tiers for 2000-5000
+  if (n <= 2000) return 2000.00;
+  if (n <= 3000) return 3000.00;
+  if (n <= 4000) return 4000.00;
+  if (n <= 5000) return 5000.00;
+  
   return null; // Signals "Contact for Assessment"
 };
 
@@ -226,76 +232,78 @@ const getInitializationPrice = (n: number) => {
           <span className="text-sm bg-blue-50 text-blue-700 px-3 py-1 rounded-full font-medium">{user?.email}</span>
         </header>
         <div className="p-8 overflow-y-auto">          
-          {view === 'billing' && (
-  <div className="max-w-5xl mx-auto space-y-8 pb-20">
+{view === 'billing' && (
+  <div className="max-w-6xl mx-auto space-y-8 pb-20">
     <div className="bg-white rounded-2xl shadow-sm border p-8">
       <h3 className="text-2xl font-bold text-[#001529] mb-6">1. Initialization Price Calculator</h3>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-        {/* Left: The Calculator */}
-        <div className="space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+        {/* Left: The Calculator (Takes 2 columns on large screens) */}
+        <div className="lg:col-span-2 space-y-6">
           <div>
             <label className="block text-sm font-bold text-gray-700 mb-2">Enter Total Distinct SKUs (N)</label>
             <input 
               type="number" 
-              className="w-full p-4 border-2 border-blue-100 rounded-xl bg-gray-50 text-xl font-bold focus:border-blue-500 outline-none"
-              placeholder="e.g. 500"
+              className="w-full p-4 border-2 border-blue-100 rounded-xl bg-gray-50 text-2xl font-bold focus:border-blue-500 outline-none"
+              placeholder="e.g. 2500"
               value={skuCount || ''}
               onChange={(e) => setSkuCount(Number(e.target.value))}
             />
           </div>
 
-          <div className="p-6 bg-[#001529] text-white rounded-xl shadow-inner">
+          <div className="p-8 bg-[#001529] text-white rounded-xl shadow-xl">
             <div className="flex justify-between items-center mb-4 border-b border-blue-900 pb-4">
               <span className="text-blue-300">Total Combinations C(N,2):</span>
-              <span className="text-2xl font-mono">
+              <span className="text-3xl font-mono">
                 {skuCount > 1 ? (skuCount * (skuCount - 1) / 2).toLocaleString() : 0}
               </span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-blue-300 font-bold">Initialization Price:</span>
-              <span className="text-3xl font-black">
-                {skuCount > 1000 ? (
-                  <span className="text-lg text-yellow-400">Personal Assessment Required</span>
+              <span className="text-blue-300 font-bold text-lg">Initialization Price:</span>
+              <span className="text-4xl font-black">
+                {skuCount > 5000 ? (
+                  <span className="text-xl text-yellow-400 font-bold">1:1 Assessment Required</span>
                 ) : (
-                  `$${getInitializationPrice(skuCount)}`
+                  `$${(getInitializationPrice(skuCount) + (skuCount > 300 && needsStratification ? 149 : 0)).toLocaleString(undefined, {minimumFractionDigits: 2})}`
                 )}
               </span>
             </div>
           </div>
           
-          <div className="text-xs text-gray-400 italic">
-            * C(N,2) represents the number of unique pair combinations calculated to build your co-purchase matrix.
+          <div className="text-sm text-gray-500 bg-gray-50 p-4 rounded-lg border-l-4 border-blue-500">
+            <strong>Technical Note:</strong> For SKU counts up to 5,000, we perform a complete $N \times N$ semantic matrix generation. Counts above 5,000 require our partitioned architectural approach to manage memory constraints.
           </div>
         </div>
 
-        {/* Right: Reference Table */}
-        <div className="bg-gray-50 rounded-xl p-4 border overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-gray-500 border-b">
-                <th className="pb-2 font-bold uppercase tracking-wider">Total Items</th>
-                <th className="pb-2 font-bold uppercase tracking-wider text-right">Init. Price</th>
-              </tr>
-            </thead>
-            <tbody className="text-gray-700 divide-y">
-              {[100, 200, 300, 400, 500, 600, 700, 800, 900, 1000].map((val) => (
-                <tr key={val} className={skuCount > val - 100 && skuCount <= val ? "bg-blue-100 font-bold" : ""}>
-                  <td className="py-2">{val.toLocaleString()}</td>
-                  <td className="py-2 text-right">${getInitializationPrice(val)}</td>
+        {/* Right: Extended Reference Table */}
+        <div className="bg-gray-50 rounded-xl p-5 border overflow-hidden">
+          <h4 className="text-xs font-black text-gray-400 uppercase mb-4 tracking-widest text-center">Pricing Tiers</h4>
+          <div className="max-h-[400px] overflow-y-auto">
+            <table className="w-full text-sm">
+              <thead className="sticky top-0 bg-gray-50 z-10">
+                <tr className="text-left text-gray-500 border-b">
+                  <th className="pb-2 font-bold">Items (N)</th>
+                  <th className="pb-2 font-bold text-right">Price</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-          <div className="mt-4 p-2 bg-yellow-50 text-yellow-800 text-[10px] rounded text-center border border-yellow-200 uppercase font-bold">
-            Above 1,000 items: 1:1 Personal Assessment
+              </thead>
+              <tbody className="text-gray-700 divide-y">
+                {[100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 2000, 3000, 4000, 5000].map((val) => (
+                  <tr key={val} className={skuCount > val - (val > 1000 ? 1000 : 100) && skuCount <= val ? "bg-blue-100 font-bold" : ""}>
+                    <td className="py-2">{val.toLocaleString()}</td>
+                    <td className="py-2 text-right">${getInitializationPrice(val).toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="mt-4 p-3 bg-[#001529] text-white text-[10px] rounded text-center font-bold">
+            &gt; 5,000 ITEMS: PERSONAL ASSESSMENT
           </div>
         </div>
       </div>
     </div>
 
-
-    {/* NEW: STRATIFICATION OPTION */}
+    {/* DATA STRATIFICATION OPTION */}
     <div className={`p-6 rounded-2xl border-2 transition-all ${needsStratification ? 'bg-blue-50 border-blue-200' : 'bg-white border-gray-100'}`}>
       <div className="flex items-start gap-4">
         <input 
@@ -307,59 +315,41 @@ const getInitializationPrice = (n: number) => {
         <div>
           <h4 className="font-bold text-[#001529]">Add Data Stratification & Hygiene Audit</h4>
           <p className="text-sm text-gray-600">
-            I need James to assist in creating 2-level categories to prune the co-purchase matrix and improve recommendation diversity.
+            Professional 2-level taxonomy creation. Essential for diverse recommendations and matrix pruning.
           </p>
-          {skuCount > 300 && (
-            <span className="text-blue-600 font-bold text-sm">+$149.00 Audit Fee</span>
-          )}
+          <span className="text-blue-600 font-bold text-sm">+$149.00 Audit Fee</span>
         </div>
       </div>
     </div>
 
- {/* UPDATED: PAYMENT ACTIONS */}
-    <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200">
-      <div className="mb-8">
-        <h3 className="font-bold mb-2">Final Quote</h3>
-        <div className="flex justify-between items-end">
-          <div className="text-sm text-gray-500">
-            Initialization: ${initPrice} <br/>
-            {stratificationPrice > 0 && <>Data Audit: ${stratificationPrice} <br/></>}
-            <span className="text-xl font-bold text-[#001529]">Total: ${finalTotal.toFixed(2)}</span>
+    {/* FINAL QUOTE & ACTION */}
+    <div className="bg-white p-8 rounded-2xl shadow-lg border-2 border-[#001529]/10">
+      <div className="flex flex-col md:flex-row justify-between items-center gap-8">
+        <div className="text-center md:text-left">
+          <div className="text-sm text-gray-400 uppercase font-bold tracking-widest">Final Initialization Quote</div>
+          <div className="text-5xl font-black text-[#001529] mt-1">
+            {skuCount > 5000 ? "TBD" : `$${(getInitializationPrice(skuCount) + (skuCount > 300 && needsStratification ? 149 : 0)).toFixed(2)}`}
           </div>
-          
-          <label className="flex items-center gap-3 cursor-pointer">
+          <label className="flex items-center gap-3 mt-4 cursor-pointer justify-center md:justify-start">
             <input type="checkbox" className="w-5 h-5 accent-[#001529]" checked={hasAgreed} onChange={e => setHasAgreed(e.target.checked)} />
-            <span className="text-sm font-semibold">I accept this custom quote.</span>
+            <span className="text-sm font-semibold text-gray-700">I accept this custom technical quote.</span>
           </label>
         </div>
-      </div>
 
-      <div className="flex flex-col md:flex-row gap-6">
-        <button 
-          disabled={!hasAgreed || skuCount > 1000 || skuCount === 0}
-          onClick={() => alert(`Requesting Invoice for $${finalTotal.toFixed(2)}`)}
-          className="flex-1 py-4 bg-[#001529] text-white rounded-xl font-bold disabled:bg-gray-200"
-        >
-          {skuCount > 1000 ? "Request Personal Assessment" : "Request Setup Invoice"}
-        </button>
-        
-        {/* Monthly Plan remains the same */}
-         <div className="flex-1 p-4 bg-green-50 border-2 border-green-100 rounded-xl flex items-center justify-between">
-          <div>
-            <div className="text-xs font-bold text-green-700 uppercase">Monthly Maintenance</div>
-            <div className="text-2xl font-black text-[#001529]">$99<span className="text-sm font-normal">/mo</span></div>
-          </div>
+        <div className="w-full md:w-auto space-y-4">
           <button 
-            disabled={!hasAgreed}
-            className="px-6 py-3 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 disabled:bg-gray-200 transition"
+            disabled={!hasAgreed || skuCount === 0}
+            onClick={() => alert(`Requesting ${skuCount > 5000 ? 'Assessment' : 'Invoice'} for ${skuCount} items`)}
+            className="w-full md:w-80 py-5 bg-[#001529] text-white rounded-2xl font-black text-xl shadow-xl hover:bg-blue-900 transition disabled:bg-gray-200"
           >
-            Subscribe
+            {skuCount > 5000 ? "Request Assessment" : "Request Setup Invoice"}
           </button>
         </div>
       </div>
     </div>
   </div>
-)}                  
+)}
+        
           {view === 'dashboard' && (
             <div className="max-w-4xl mx-auto">
               <div className="bg-white border-2 border-dashed border-gray-300 rounded-xl p-12 text-center mb-8">
