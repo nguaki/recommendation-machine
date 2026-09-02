@@ -68,10 +68,16 @@ const getInitializationPrice = (n: number) => {
   return null; // Signals "Contact for Assessment"
 };
 
-  const initPrice = getInitializationPrice(skuCount);
-  const stratificationPrice = skuCount > 300 && needsStratification ? 149.00 : 0;
-  const finalTotal = initPrice + stratificationPrice;
-  
+const initPrice = getInitializationPrice(skuCount);
+
+// New Logic: $0.50 per item with a $150 minimum to make it worth your start-up time
+const perItemRate = 0.50;
+const stratificationBase = skuCount * perItemRate;
+// We only apply this if the user checks the box
+const stratificationPrice = needsStratification ? Math.max(stratificationBase, 0) : 0;
+
+const finalTotal = initPrice + stratificationPrice;
+    
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
@@ -303,51 +309,79 @@ const getInitializationPrice = (n: number) => {
       </div>
     </div>
 
-    {/* DATA STRATIFICATION OPTION */}
-    <div className={`p-6 rounded-2xl border-2 transition-all ${needsStratification ? 'bg-blue-50 border-blue-200' : 'bg-white border-gray-100'}`}>
-      <div className="flex items-start gap-4">
-        <input 
-          type="checkbox" 
-          className="w-6 h-6 mt-1 accent-[#001529]" 
-          checked={needsStratification}
-          onChange={(e) => setNeedsStratification(e.target.checked)}
-        />
-        <div>
-          <h4 className="font-bold text-[#001529]">Add Data Stratification & Hygiene Audit</h4>
-          <p className="text-sm text-gray-600">
-            Professional 2-level taxonomy creation. Essential for diverse recommendations and matrix pruning.
-          </p>
-          <span className="text-blue-600 font-bold text-sm">+$149.00 Audit Fee</span>
-        </div>
+{/* DATA STRATIFICATION OPTION */}
+<div className={`p-6 rounded-2xl border-2 transition-all ${needsStratification ? 'bg-blue-50 border-blue-200 shadow-inner' : 'bg-white border-gray-100'}`}>
+  <div className="flex items-start gap-4">
+    <input 
+      type="checkbox" 
+      className="w-6 h-6 mt-1 accent-[#001529]" 
+      checked={needsStratification}
+      onChange={(e) => setNeedsStratification(e.target.checked)}
+    />
+    <div>
+      <div className="flex items-center gap-2">
+        <h4 className="font-bold text-[#001529]">Human-in-the-Loop Data Stratification</h4>
+        <span className="bg-blue-600 text-white text-[10px] px-2 py-0.5 rounded-full uppercase tracking-tighter">Recommended</span>
       </div>
-    </div>
-
-    {/* FINAL QUOTE & ACTION */}
-    <div className="bg-white p-8 rounded-2xl shadow-lg border-2 border-[#001529]/10">
-      <div className="flex flex-col md:flex-row justify-between items-center gap-8">
-        <div className="text-center md:text-left">
-          <div className="text-sm text-gray-400 uppercase font-bold tracking-widest">Final Initialization Quote</div>
-          <div className="text-5xl font-black text-[#001529] mt-1">
-            {skuCount > 5000 ? "TBD" : `$${(getInitializationPrice(skuCount) + (skuCount > 300 && needsStratification ? 149 : 0)).toFixed(2)}`}
+      <p className="text-sm text-gray-600 mt-1">
+        We perform multiple LLM cycles to create a 2-level taxonomy. Includes manual verification and hallucination checks to ensure "Pipe & Metal" level logic accuracy.
+      </p>
+      
+      {needsStratification && (
+        <div className="mt-3 p-3 bg-white rounded border border-blue-100 text-sm">
+          <div className="flex justify-between font-bold text-blue-800">
+            <span>Audit Deposit ($0.50 x {skuCount} items):</span>
+            <span>${stratificationBase.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
           </div>
-          <label className="flex items-center gap-3 mt-4 cursor-pointer justify-center md:justify-start">
-            <input type="checkbox" className="w-5 h-5 accent-[#001529]" checked={hasAgreed} onChange={e => setHasAgreed(e.target.checked)} />
-            <span className="text-sm font-semibold text-gray-700">I accept this custom technical quote.</span>
-          </label>
+          <p className="text-[10px] text-gray-400 mt-1 italic leading-tight">
+            * Note: For unstructured or high-error data sets requiring excessive manual fine-tuning, 
+            labor exceeding 1hr per 100 SKUs is billed at $30/hr upon completion.
+          </p>
         </div>
-
-        <div className="w-full md:w-auto space-y-4">
-          <button 
-            disabled={!hasAgreed || skuCount === 0}
-            onClick={() => alert(`Requesting ${skuCount > 5000 ? 'Assessment' : 'Invoice'} for ${skuCount} items`)}
-            className="w-full md:w-80 py-5 bg-[#001529] text-white rounded-2xl font-black text-xl shadow-xl hover:bg-blue-900 transition disabled:bg-gray-200"
-          >
-            {skuCount > 5000 ? "Request Assessment" : "Request Setup Invoice"}
-          </button>
-        </div>
-      </div>
+      )}
     </div>
   </div>
+</div>
+
+{/* FINAL QUOTE & ACTION */}
+<div className="bg-white p-8 rounded-2xl shadow-lg border-2 border-[#001529]/10">
+  <div className="flex flex-col md:flex-row justify-between items-center gap-8">
+    <div className="text-center md:text-left">
+      <div className="text-xs text-gray-400 uppercase font-black tracking-widest">Investment Summary</div>
+      <div className="space-y-1 mt-2">
+        <div className="flex justify-between text-sm text-gray-600 border-b border-dotted pb-1">
+          <span>Matrix Initialization ({skuCount} SKUs):</span>
+          <span className="font-mono">${initPrice.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+        </div>
+        {needsStratification && (
+          <div className="flex justify-between text-sm text-blue-700 border-b border-dotted pb-1">
+            <span>Stratification Deposit:</span>
+            <span className="font-mono">${stratificationBase.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+          </div>
+        )}
+        <div className="flex justify-between items-end pt-2">
+          <span className="text-lg font-bold text-[#001529]">Initial Total:</span>
+          <span className="text-4xl font-black text-[#001529]">${finalTotal.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+        </div>
+      </div>
+      
+      <label className="flex items-center gap-3 mt-6 cursor-pointer justify-center md:justify-start">
+        <input type="checkbox" className="w-5 h-5 accent-[#001529]" checked={hasAgreed} onChange={e => setHasAgreed(e.target.checked)} />
+        <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">I accept this technical quote & labor terms.</span>
+      </label>
+    </div>
+
+    <div className="w-full md:w-auto">
+      <button 
+        disabled={!hasAgreed || skuCount === 0 || skuCount > 5000}
+        onClick={() => alert(`Requesting Setup Invoice for $${finalTotal.toFixed(2)}`)}
+        className="w-full md:w-80 py-5 bg-[#001529] text-white rounded-2xl font-black text-xl shadow-xl hover:bg-blue-900 transition disabled:bg-gray-200"
+      >
+        Request Setup Invoice
+      </button>
+    </div>
+  </div>
+</div>
 )}
         
           {view === 'dashboard' && (
