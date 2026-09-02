@@ -382,6 +382,8 @@ const finalTotal = initPrice + stratificationPrice;
     </div>
   </div>
 </div>
+</div>
+
 )}
         
           {view === 'dashboard' && (
