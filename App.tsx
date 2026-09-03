@@ -88,6 +88,47 @@ const finalTotal = initPrice + stratificationPrice;
   }, []);
 
   // --- HANDLERS ---
+  const handleInvoiceRequest = async () => {
+  setSubmitting(true);
+  
+  // This is the data you need to create the manual invoice in Stripe
+  const invoicePayload = {
+    userEmail: user.email,
+    uid: user.uid,
+    skuCount: skuCount,
+    matrixPrice: initPrice.toFixed(2),
+    stratificationPrice: stratificationPrice.toFixed(2),
+    totalPrice: finalTotal.toFixed(2),
+    needsStratification: needsStratification ? "YES" : "NO",
+    messageType: "INVOICE_REQUEST"
+  };
+
+  try {
+    // 1. Record the request in Firestore so you have a "Paper Trail"
+    await addDoc(collection(db, "invoice_requests"), {
+      ...invoicePayload,
+      createdAt: serverTimestamp()
+    });
+
+    // 2. Send the notification to your Gmail via EmailJS
+    // Note: Make sure your EmailJS Template can handle these keys
+    await emailjs.send(
+      'service_qklzfci', 
+      'template_st05npk', 
+      invoicePayload,
+      'FfJyzOtIfjHoD6Dfm'
+    );
+
+    alert("Invoice Requested! James will review your SKU count and send a secure Stripe payment link to your email within 24 hours.");
+    setView('dashboard'); // Return them to the main view
+  } catch (err) {
+    console.error(err);
+    alert("Failed to send request. Please try again or contact support.");
+  } finally {
+    setSubmitting(false);
+  }
+};
+  
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
