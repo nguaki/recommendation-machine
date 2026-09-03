@@ -10,7 +10,7 @@ import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import emailjs from '@emailjs/browser';
 
 // Initialize EmailJS
-emailjs.init("YOUR_PUBLIC_KEY"); 
+emailjs.init("FfJyzOtIfjHoD6Dfm"); 
 
 
 
@@ -106,7 +106,7 @@ const finalTotal = initPrice + stratificationPrice;
 
     try {
       await addDoc(collection(db, "leads"), { ...payload, createdAt: serverTimestamp() });
-      await emailjs.send('YOUR_SERVICE_ID', 'YOUR_TEMPLATE_ID', payload);
+      await emailjs.send('service_qklzfci', 'template_st05npk', payload);
       alert("Success! Request sent to James.");
       setView('home');
     } catch (err) { alert("Sent to database, but email failed."); }
@@ -373,11 +373,11 @@ const finalTotal = initPrice + stratificationPrice;
 
     <div className="w-full md:w-auto">
       <button 
-        disabled={!hasAgreed || skuCount === 0 || skuCount > 5000}
-        onClick={() => alert(`Requesting Setup Invoice for $${finalTotal.toFixed(2)}`)}
-        className="w-full md:w-80 py-5 bg-[#001529] text-white rounded-2xl font-black text-xl shadow-xl hover:bg-blue-900 transition disabled:bg-gray-200"
+        disabled={!hasAgreed || skuCount === 0 || submitting}
+        onClick={handleInvoiceRequest}
+        className="..."
       >
-        Request Setup Invoice
+        {submitting ? "Processing..." : (skuCount > 5000 ? "Request Assessment" : "Request Setup Invoice")}
       </button>
     </div>
   </div>
