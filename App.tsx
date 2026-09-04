@@ -87,6 +87,35 @@ const finalTotal = initPrice + stratificationPrice;
     return () => unsubscribe();
   }, []);
 
+// --- Add these new states ---
+const [monthlyTx, setMonthlyTx] = useState(100); // Transactions
+const [refreshFreq, setRefreshFreq] = useState<'monthly' | 'biweekly' | 'weekly'>('monthly');
+
+// --- Calculation Logic (Targeting 70% Margin) ---
+const calculateMonthlyTotal = () => {
+  // 1. Base Infrastructure (Firestore/API/GCP Storage)
+  let base = 1.00; 
+
+  // 2. Transaction Processing Fee (Scales with volume)
+  // Approx $0.50 per 1000 transactions
+  let processing = (monthlyTx / 1000) * 0.50;
+
+  // 3. Frequency Multiplier (Heartbeat)
+  let multiplier = 1;
+  if (refreshFreq === 'biweekly') multiplier = 1.5;
+  if (refreshFreq === 'weekly') multiplier = 3.0;
+
+  // 4. SKU Complexity (The matrix size we discussed)
+  let skuOverhead = (skuCount / 1000) * 2.00;
+
+  const total = (base + processing + skuOverhead) * multiplier;
+  
+  // Custom logic for the $20k Enterprise floor
+  if (monthlyTx > 1000000) return 20000; 
+  
+  return total < 1 ? 1.00 : total; // Minimum $1.00
+};
+  
   // --- HANDLERS ---
   const handleInvoiceRequest = async () => {
   setSubmitting(true);
@@ -397,6 +426,99 @@ const finalTotal = initPrice + stratificationPrice;
       </div>
     </div>
 
+{/* 2. MONTHLY SUBSCRIPTION (THE DYNAMIC PLAN) */}
+<div className={`p-8 rounded-3xl border-2 transition-all ${hasAgreed ? 'bg-green-50 border-green-400 shadow-lg' : 'bg-white border-gray-100 opacity-40'}`}>
+  <div className="flex flex-col lg:flex-row gap-10">
+    
+    {/* Left: Usage Sliders */}
+    <div className="flex-1 space-y-6">
+      <div className="flex items-center gap-3">
+        <div className="bg-green-600 p-2 rounded-lg text-white"><LayoutDashboard size={20}/></div>
+        <h3 className="text-xl font-bold text-[#001529]">Your Service Heartbeat</h3>
+      </div>
+
+      <div className="space-y-4">
+        <div>
+          <div className="flex justify-between text-sm mb-2">
+            <span className="font-bold text-gray-600">Expected Monthly Transactions</span>
+            <span className="text-green-700 font-mono font-bold">{monthlyTx.toLocaleString()}</span>
+          </div>
+          <input 
+            type="range" min="100" max="100000" step="100"
+            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-green-600"
+            value={monthlyTx} onChange={(e) => setMonthlyTx(Number(e.target.value))}
+          />
+        </div>
+
+        <div>
+          <span className="block text-sm font-bold text-gray-600 mb-3">Model Refresh Frequency</span>
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { id: 'monthly', label: 'Monthly', desc: '1x/mo' },
+              { id: 'biweekly', label: 'Bi-Weekly', desc: '2x/mo' },
+              { id: 'weekly', label: 'Weekly', desc: '4x/mo' }
+            ].map((f) => (
+              <button
+                key={f.id}
+                onClick={() => setRefreshFreq(f.id as any)}
+                className={`p-3 rounded-xl border-2 text-center transition-all ${refreshFreq === f.id ? 'bg-green-600 border-green-600 text-white shadow-md' : 'bg-white border-gray-200 text-gray-500 hover:border-green-200'}`}
+              >
+                <div className="text-xs font-bold uppercase">{f.label}</div>
+                <div className="text-[10px] opacity-70">{f.desc}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {/* Right: The Bill */}
+    <div className="lg:w-80 bg-white rounded-2xl p-6 border border-green-200 flex flex-col justify-between">
+      <div>
+        <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Monthly Subscription</div>
+        <div className="text-5xl font-black text-[#001529] tracking-tighter">
+          ${calculateMonthlyTotal().toLocaleString(undefined, {minimumFractionDigits: 2})}
+          <span className="text-sm font-normal text-gray-400">/mo</span>
+        </div>
+        
+        <div className="mt-6 space-y-2">
+          <div className="flex justify-between text-[10px] text-gray-500 uppercase font-bold border-b pb-1">
+            <span>Data Ingress</span>
+            <span>Included</span>
+          </div>
+          <div className="flex justify-between text-[10px] text-gray-500 uppercase font-bold border-b pb-1">
+            <span>GCP Storage</span>
+            <span>Included</span>
+          </div>
+          <div className="flex justify-between text-[10px] text-gray-500 uppercase font-bold border-b pb-1">
+            <span>API Calls</span>
+            <span>Unlimited</span>
+          </div>
+        </div>
+      </div>
+
+      <button 
+        disabled={!hasAgreed}
+        className="mt-8 w-full py-4 bg-green-600 text-white rounded-xl font-bold shadow-lg hover:bg-green-700 transition disabled:bg-gray-200"
+      >
+        Start Subscription
+      </button>
+    </div>
+  </div>
+
+  {/* EXPLAINER TOGGLE FOR "CLARITY & GRACE" */}
+  <details className="mt-6 group cursor-pointer">
+    <summary className="text-green-700 font-bold text-xs flex items-center gap-1 list-none">
+      <span className="group-open:rotate-90 transition-transform">▶</span> How do we keep our costs so low?
+    </summary>
+    <div className="mt-4 p-4 bg-white/50 rounded-lg border border-green-100 text-xs text-gray-600 leading-relaxed">
+      We believe every business deserves a great brain. Our <strong>Agentic AI Automation</strong> handles the heavy lifting of data processing 
+      in the background, allowing us to pass the savings directly to you. From the $1.00 micro-shop to the million-dollar enterprise, 
+      our platform scales your costs only as your business grows. No hidden fees, just pure mathematical efficiency.
+    </div>
+  </details>
+</div>
+    
     {/* 3. FINAL ACTION AREA */}
     <div className="bg-white p-10 rounded-3xl shadow-2xl border-t-8 border-[#001529]">
       <div className="flex flex-col md:flex-row justify-between items-center gap-10">
