@@ -278,153 +278,180 @@ const finalTotal = initPrice + stratificationPrice;
           <h2 className="text-xl font-semibold text-gray-800 capitalize">{view}</h2>
           <span className="text-sm bg-blue-50 text-blue-700 px-3 py-1 rounded-full font-medium">{user?.email}</span>
         </header>
-        <div className="p-8 overflow-y-auto">          
+        <div className="p-8 overflow-y-auto"> 
 {view === 'billing' && (
-  <div className="max-w-6xl mx-auto space-y-8 pb-20">
+  <div className="max-w-5xl mx-auto space-y-8 pb-20 font-sans">
+    
+    {/* 1. INITIALIZATION CALCULATOR */}
     <div className="bg-white rounded-2xl shadow-sm border p-8">
-      <h3 className="text-2xl font-bold text-[#001529] mb-6">1. Initialization Price Calculator</h3>
+      <h3 className="text-2xl font-bold text-[#001529] mb-6 flex items-center gap-2">
+        <Package className="text-blue-600" /> 1. Initialization Price Calculator
+      </h3>
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-        {/* Left: The Calculator (Takes 2 columns on large screens) */}
         <div className="lg:col-span-2 space-y-6">
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">Enter Total Distinct SKUs (N)</label>
+            <label className="block text-sm font-bold text-gray-700 mb-2">How many different items do you sell? (SKU Count)</label>
             <input 
               type="number" 
-              className="w-full p-4 border-2 border-blue-100 rounded-xl bg-gray-50 text-2xl font-bold focus:border-blue-500 outline-none"
-              placeholder="e.g. 2500"
+              className="w-full p-4 border-2 border-blue-100 rounded-xl bg-gray-50 text-2xl font-bold focus:border-blue-600 outline-none transition-all"
+              placeholder="e.g. 500"
               value={skuCount || ''}
               onChange={(e) => setSkuCount(Number(e.target.value))}
             />
           </div>
 
-          <div className="p-8 bg-[#001529] text-white rounded-xl shadow-xl">
-            <div className="flex justify-between items-center mb-4 border-b border-blue-900 pb-4">
-              <span className="text-blue-300">Total Combinations C(N,2):</span>
-              <span className="text-3xl font-mono">
-                {skuCount > 1 ? (skuCount * (skuCount - 1) / 2).toLocaleString() : 0}
-              </span>
+          <div className="p-8 bg-[#001529] text-white rounded-2xl shadow-xl border-b-4 border-blue-600">
+            <div className="flex justify-between items-center mb-4 border-b border-white/10 pb-4">
+              <div className="flex flex-col">
+                <span className="text-blue-300 text-xs font-bold uppercase tracking-widest">Calculated Pairs C(n,2)</span>
+                <span className="text-3xl font-mono">{skuCount > 1 ? (skuCount * (skuCount - 1) / 2).toLocaleString() : 0}</span>
+              </div>
+              
+              {/* LAYMAN C(N,2) EXPLAINER */}
+              <details className="group bg-white/5 rounded-lg p-2 max-w-[200px] cursor-pointer hover:bg-white/10 transition">
+                <summary className="text-[10px] font-bold list-none flex items-center gap-1 uppercase">
+                  <span className="group-open:rotate-90 transition-transform">▶</span> What is this?
+                </summary>
+                <p className="text-[10px] mt-2 text-blue-100 leading-relaxed normal-case font-medium">
+                  Imagine you have 5 friends. How many different pairs of friends can you make? (The answer is 10!) 
+                  Our machine looks at every single pair of your items to see if they belong together. 
+                  As you add more items, the number of pairs grows very quickly!
+                </p>
+              </details>
             </div>
+            
             <div className="flex justify-between items-center">
-              <span className="text-blue-300 font-bold text-lg">Initialization Price:</span>
-              <span className="text-4xl font-black">
-                {skuCount > 5000 ? (
-                  <span className="text-xl text-yellow-400 font-bold">1:1 Assessment Required</span>
-                ) : (
-                  `$${(getInitializationPrice(skuCount) + (skuCount > 300 && needsStratification ? 149 : 0)).toLocaleString(undefined, {minimumFractionDigits: 2})}`
-                )}
+              <span className="text-blue-300 font-bold text-lg uppercase tracking-tighter italic">Total Setup Price:</span>
+              <span className="text-5xl font-black tabular-nums">
+                {skuCount > 5000 ? "TBD" : `$${finalTotal.toFixed(2)}`}
               </span>
             </div>
-          </div>
-          
-          <div className="text-sm text-gray-500 bg-gray-50 p-4 rounded-lg border-l-4 border-blue-500">
-            <strong>Technical Note:</strong> For SKU counts up to 5,000, we perform a complete $N \times N$ semantic matrix generation. Counts above 5,000 require our partitioned architectural approach to manage memory constraints.
           </div>
         </div>
 
-        {/* Right: Extended Reference Table */}
-        <div className="bg-gray-50 rounded-xl p-5 border overflow-hidden">
-          <h4 className="text-xs font-black text-gray-400 uppercase mb-4 tracking-widest text-center">Pricing Tiers</h4>
-          <div className="max-h-[400px] overflow-y-auto">
-            <table className="w-full text-sm">
-              <thead className="sticky top-0 bg-gray-50 z-10">
-                <tr className="text-left text-gray-500 border-b">
-                  <th className="pb-2 font-bold">Items (N)</th>
-                  <th className="pb-2 font-bold text-right">Price</th>
-                </tr>
-              </thead>
-              <tbody className="text-gray-700 divide-y">
-                {[100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 2000, 3000, 4000, 5000].map((val) => (
-                  <tr key={val} className={skuCount > val - (val > 1000 ? 1000 : 100) && skuCount <= val ? "bg-blue-100 font-bold" : ""}>
-                    <td className="py-2">{val.toLocaleString()}</td>
-                    <td className="py-2 text-right">${getInitializationPrice(val).toLocaleString()}</td>
+        {/* TIERS TABLE */}
+        <div className="bg-gray-50 rounded-xl p-5 border border-gray-200">
+          <h4 className="text-[10px] font-black text-gray-400 uppercase mb-4 tracking-[0.2em] text-center">Standard Pricing Tiers</h4>
+          <div className="overflow-hidden">
+            <table className="w-full text-xs">
+              <tbody className="text-gray-600 divide-y divide-gray-200">
+                {[100, 300, 500, 1000, 3000, 5000].map((val) => (
+                  <tr key={val} className={skuCount > val - 200 && skuCount <= val ? "bg-blue-100 text-blue-900 font-bold" : ""}>
+                    <td className="py-2 px-2 uppercase tracking-tighter">{val} Items</td>
+                    <td className="py-2 px-2 text-right">${getInitializationPrice(val).toLocaleString()}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-          <div className="mt-4 p-3 bg-[#001529] text-white text-[10px] rounded text-center font-bold">
-            &gt; 5,000 ITEMS: PERSONAL ASSESSMENT
-          </div>
         </div>
       </div>
     </div>
 
-{/* DATA STRATIFICATION OPTION */}
-<div className={`p-6 rounded-2xl border-2 transition-all ${needsStratification ? 'bg-blue-50 border-blue-200 shadow-inner' : 'bg-white border-gray-100'}`}>
-  <div className="flex items-start gap-4">
-    <input 
-      type="checkbox" 
-      className="w-6 h-6 mt-1 accent-[#001529]" 
-      checked={needsStratification}
-      onChange={(e) => setNeedsStratification(e.target.checked)}
-    />
-    <div>
-      <div className="flex items-center gap-2">
-        <h4 className="font-bold text-[#001529]">Human-in-the-Loop Data Stratification</h4>
-        <span className="bg-blue-600 text-white text-[10px] px-2 py-0.5 rounded-full uppercase tracking-tighter">Recommended</span>
-      </div>
-      <p className="text-sm text-gray-600 mt-1">
-        We perform multiple LLM cycles to create a 2-level taxonomy. Includes manual verification and hallucination checks to ensure "Pipe & Metal" level logic accuracy.
-      </p>
-      
-      {needsStratification && (
-        <div className="mt-3 p-3 bg-white rounded border border-blue-100 text-sm">
-          <div className="flex justify-between font-bold text-blue-800">
-            <span>Audit Deposit ($0.50 x {skuCount} items):</span>
-            <span>${stratificationBase.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+    {/* 2. STRATIFICATION (THE "ORGANIZING" BOX) */}
+    <div className={`p-8 rounded-2xl border-2 transition-all duration-300 ${needsStratification ? 'bg-blue-50 border-blue-400 shadow-md scale-[1.01]' : 'bg-white border-gray-200'}`}>
+      <div className="flex items-start gap-5">
+        <div className="relative flex items-center h-5">
+          <input 
+            type="checkbox" 
+            className="w-6 h-6 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer accent-[#001529]" 
+            checked={needsStratification}
+            onChange={(e) => setNeedsStratification(e.target.checked)}
+          />
+        </div>
+        <div className="flex-1">
+          <div className="flex items-center gap-3">
+            <h4 className="font-bold text-xl text-[#001529]">Let us organize your items for you</h4>
+            <span className="bg-blue-100 text-blue-700 text-[10px] px-2 py-1 rounded font-black uppercase">Highly Recommended</span>
           </div>
-          <p className="text-[10px] text-gray-400 mt-1 italic leading-tight">
-            * Note: For unstructured or high-error data sets requiring excessive manual fine-tuning, 
-            labor exceeding 1hr per 100 SKUs is billed at $30/hr upon completion.
+          
+          <p className="text-gray-600 mt-2 text-sm leading-relaxed max-w-2xl">
+            We use our AI to put your items into the right categories. This makes the machine much smarter and faster.
+          </p>
+
+          {/* STRATIFICATION EXPLAINER */}
+          <details className="mt-4 group cursor-pointer">
+            <summary className="text-blue-600 font-bold text-xs flex items-center gap-1 list-none">
+              <span className="group-open:rotate-90 transition-transform">▶</span> Why is this important?
+            </summary>
+            <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-white p-3 rounded-lg border border-blue-100 shadow-sm">
+                <p className="text-xs font-bold text-blue-800 mb-1 italic">1. It finds better matches:</p>
+                <p className="text-[11px] text-gray-500 leading-tight">If the machine knows an item is a "Screwdriver" and another is a "Screw," it focuses on them. It won't waste time trying to match a "Hammer" with a "Banana."</p>
+              </div>
+              <div className="bg-white p-3 rounded-lg border border-blue-100 shadow-sm">
+                <p className="text-xs font-bold text-blue-800 mb-1 italic">2. It gives better suggestions:</p>
+                <p className="text-[11px] text-gray-500 leading-tight">If a customer buys a sandwich, we want to suggest a <strong>drink</strong> or <strong>chips</strong>, not another sandwich. Organizing items into groups makes this possible!</p>
+              </div>
+            </div>
+          </details>
+
+          {needsStratification && (
+            <div className="mt-6 flex items-center gap-2 text-[#001529] font-black animate-in fade-in slide-in-from-left-2">
+              <CheckCircle2 size={18} className="text-green-500" />
+              <span>Added to quote: $0.50 x {skuCount} items</span>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+
+    {/* 3. FINAL ACTION AREA */}
+    <div className="bg-white p-10 rounded-3xl shadow-2xl border-t-8 border-[#001529]">
+      <div className="flex flex-col md:flex-row justify-between items-center gap-10">
+        <div className="text-center md:text-left space-y-2">
+          <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em]">Final Investment Quote</span>
+          <div className="text-6xl font-black text-[#001529] tracking-tight">
+            {skuCount > 5000 ? "TBD" : `$${finalTotal.toLocaleString(undefined, {minimumFractionDigits: 2})}`}
+          </div>
+          
+          <label className="flex items-center gap-3 mt-6 cursor-pointer group justify-center md:justify-start">
+            <div className="relative">
+              <input 
+                type="checkbox" 
+                className="w-6 h-6 appearance-none border-2 border-gray-300 rounded checked:bg-[#001529] checked:border-[#001529] transition-all cursor-pointer" 
+                checked={hasAgreed} 
+                onChange={e => setHasAgreed(e.target.checked)} 
+              />
+              {hasAgreed && <CheckCircle2 className="absolute top-0.5 left-0.5 text-white pointer-events-none" size={20} />}
+            </div>
+            <span className={`text-sm font-bold transition-colors ${hasAgreed ? 'text-[#001529]' : 'text-gray-400 group-hover:text-gray-600'}`}>
+              I accept this technical quote & labor terms.
+            </span>
+          </label>
+        </div>
+
+        <div className="w-full md:w-auto">
+          {/* THE RESTORED & DYNAMIC BUTTON */}
+          <button 
+            disabled={!hasAgreed || skuCount === 0 || submitting}
+            onClick={handleInvoiceRequest}
+            className={`
+              w-full md:w-80 py-6 rounded-2xl font-black text-xl shadow-2xl transition-all duration-300 transform
+              flex items-center justify-center gap-3
+              ${hasAgreed && skuCount > 0 && !submitting
+                ? 'bg-[#001529] text-white hover:bg-blue-900 hover:-translate-y-1 active:scale-95 cursor-pointer' 
+                : 'bg-gray-100 text-gray-300 cursor-not-allowed grayscale'
+              }
+            `}
+          >
+            {submitting ? (
+              <span className="animate-pulse">Processing...</span>
+            ) : (
+              <>
+                <Send size={24} />
+                {skuCount > 5000 ? "Request Review" : "Send Me Invoice"}
+              </>
+            )}
+          </button>
+          <p className="text-[10px] text-gray-400 text-center mt-4 font-bold uppercase tracking-widest">
+            {hasAgreed ? "Ready to secure your spot" : "Please accept terms above to continue"}
           </p>
         </div>
-      )}
-    </div>
-  </div>
-</div>
-
-{/* FINAL QUOTE & ACTION */}
-<div className="bg-white p-8 rounded-2xl shadow-lg border-2 border-[#001529]/10">
-  <div className="flex flex-col md:flex-row justify-between items-center gap-8">
-    <div className="text-center md:text-left">
-      <div className="text-xs text-gray-400 uppercase font-black tracking-widest">Investment Summary</div>
-      <div className="space-y-1 mt-2">
-        <div className="flex justify-between text-sm text-gray-600 border-b border-dotted pb-1">
-          <span>Matrix Initialization ({skuCount} SKUs):</span>
-          <span className="font-mono">${initPrice.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
-        </div>
-        {needsStratification && (
-          <div className="flex justify-between text-sm text-blue-700 border-b border-dotted pb-1">
-            <span>Stratification Deposit:</span>
-            <span className="font-mono">${stratificationBase.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
-          </div>
-        )}
-        <div className="flex justify-between items-end pt-2">
-          <span className="text-lg font-bold text-[#001529]">Initial Total:</span>
-          <span className="text-4xl font-black text-[#001529]">${finalTotal.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
-        </div>
       </div>
-      
-      <label className="flex items-center gap-3 mt-6 cursor-pointer justify-center md:justify-start">
-        <input type="checkbox" className="w-5 h-5 accent-[#001529]" checked={hasAgreed} onChange={e => setHasAgreed(e.target.checked)} />
-        <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">I accept this technical quote & labor terms.</span>
-      </label>
-    </div>
-
-    <div className="w-full md:w-auto">
-      <button 
-        disabled={!hasAgreed || skuCount === 0 || submitting}
-        onClick={handleInvoiceRequest}
-        className="..."
-      >
-        {submitting ? "Processing..." : (skuCount > 5000 ? "Request Assessment" : "Request Setup Invoice")}
-      </button>
     </div>
   </div>
-</div>
-</div>
-
 )}
         
           {view === 'dashboard' && (
